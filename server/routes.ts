@@ -248,8 +248,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   });
 
   app.put("/api/sessions/:id", requireRole("teacher"), async (req, res) => {
-    const session_ = await storage.updateSession(req.params.id, req.body);
-    res.json(session_);
+    try {
+      const data = { ...req.body };
+      if (data.endedAt) data.endedAt = new Date(data.endedAt);
+      const session_ = await storage.updateSession(req.params.id, data);
+      res.json(session_);
+    } catch (error) {
+      console.error("Failed to update session:", error);
+      res.status(500).json({ message: "Failed to update session" });
+    }
   });
 
   app.post("/api/sessions/:id/scores", requireAuth, async (req, res) => {

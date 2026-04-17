@@ -14,6 +14,7 @@ import {
   Radio, Eye, Brain, Wifi, WifiOff, TrendingUp,
   SmilePlus, Frown, Meh, HelpCircle, AlertTriangle, Zap, Camera,
 } from "lucide-react";
+import Peer from "peerjs";
 import { cn } from "@/lib/utils";
 
 export default function StudentSession() {
@@ -30,9 +31,26 @@ export default function StudentSession() {
   const [cameraConsent, setCameraConsent] = useState<boolean | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraWorking, setCameraWorking] = useState(false);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const peerRef = useRef<Peer | null>(null);
   const tickRef = useRef(0);
 
   const { data: session, isLoading } = useQuery<any>({ queryKey: ["/api/sessions", id] });
+
+  useEffect(() => {
+    peerRef.current = new Peer();
+    
+    peerRef.current.on('call', (call) => {
+      call.answer();
+      call.on('stream', (stream) => {
+        setRemoteStream(stream);
+      });
+    });
+
+    return () => {
+      if (peerRef.current) peerRef.current.destroy();
+    };
+  }, []);
 
   useEffect(() => {
     const socket = getSocket();
@@ -46,6 +64,12 @@ export default function StudentSession() {
       setJoined(true);
       setSessionTitle(data.title || "Live Session");
       toast({ title: "Connected!", description: "You joined the live session" });
+
+      if (peerRef.current?.id) {
+        socket.emit("student:peer-id", peerRef.current.id);
+      } else if (peerRef.current) {
+        peerRef.current.once("open", (id) => socket.emit("student:peer-id", id));
+      }
     });
 
     socket.on("session:error", (msg: string) => {
@@ -227,6 +251,16 @@ export default function StudentSession() {
       />
 
       <div className="p-6 space-y-6">
+        {remoteStream && (
+          <div className="w-full max-w-4xl mx-auto bg-black rounded-2xl overflow-hidden shadow-2xl aspect-video mb-2 animate-in fade-in zoom-in duration-500">
+            <video 
+              ref={(v) => { if (v && !v.srcObject) v.srcObject = remoteStream; }}
+              autoPlay playsInline
+              className="w-full h-full object-contain"
+            />
+          </div>
+        )}
+
         {joined && (
           <div className="flex items-center gap-3 px-4 py-2.5 bg-emerald-50 border border-emerald-100 rounded-xl">
             <div className="flex items-center gap-2">

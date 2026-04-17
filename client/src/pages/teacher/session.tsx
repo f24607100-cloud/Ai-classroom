@@ -14,8 +14,9 @@ import { useAuth } from "@/hooks/use-auth";
 import {
   Square, Users, Brain, AlertTriangle, Eye, Radio, Wifi, WifiOff,
   TrendingUp, SmilePlus, Frown, Meh, HelpCircle, Zap, Clock,
-  Video, Monitor, ChevronRight,
+  Video, Monitor, ChevronRight, ScreenShare, Camera, Mic, MicOff
 } from "lucide-react";
+import Peer from "peerjs";
 import { cn } from "@/lib/utils";
 
 const emotionConfig: Record<string, { icon: any; color: string; bg: string; border: string; ring: string }> = {
@@ -67,6 +68,7 @@ interface StudentState {
   trend: number[];
   connected: boolean;
   lastUpdate: number;
+  peerId?: string;
 }
 
 export default function TeacherSession() {
@@ -83,6 +85,77 @@ export default function TeacherSession() {
   const tickRef = useRef(0);
   const studentStatesRef = useRef<StudentState[]>([]);
   const timerRef = useRef<number | null>(null);
+  
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const peerRef = useRef<Peer | null>(null);
+  const callsRef = useRef<Map<string, any>>(new Map());
+  const [isMuted, setIsMuted] = useState(true);
+
+  const toggleMute = () => {
+    if (streamRef.current) {
+      const newState = !isMuted;
+      streamRef.current.getAudioTracks().forEach(t => t.enabled = !newState);
+      setIsMuted(newState);
+    }
+  };
+
+  const stopStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      setStream(null);
+      streamRef.current = null;
+    }
+    callsRef.current.forEach(call => call.close());
+    callsRef.current.clear();
+  };
+
+  const startStream = async (type: "camera" | "screen") => {
+    try {
+      stopStream();
+
+      const mediaStream = type === "camera" 
+        ? await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        : await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" }, audio: true });
+        
+      mediaStream.getAudioTracks().forEach(t => t.enabled = false);
+      setIsMuted(true);
+
+      setStream(mediaStream);
+      streamRef.current = mediaStream;
+
+      const callStudents = () => {
+        studentStatesRef.current.forEach(student => {
+          if (student.peerId && student.connected) {
+            const call = peerRef.current!.call(student.peerId, mediaStream);
+            callsRef.current.set(student.peerId, call);
+          }
+        });
+      };
+
+      if (!peerRef.current) {
+        peerRef.current = new Peer();
+        peerRef.current.on('open', callStudents);
+      } else {
+        callStudents();
+      }
+
+      mediaStream.getVideoTracks()[0].onended = () => {
+        stopStream();
+      };
+    } catch (e) {
+      toast({ title: "Failed to start stream", variant: "destructive" });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopStream();
+      if (peerRef.current) {
+        peerRef.current.destroy();
+      }
+    };
+  }, []);
 
   const { data: session, isLoading: sessionLoading } = useQuery<any>({ queryKey: ["/api/sessions", id] });
   const { data: classData } = useQuery<any>({
@@ -94,9 +167,9 @@ export default function TeacherSession() {
     mutationFn: (sessionId: string) => apiRequest("PUT", `/api/sessions/${sessionId}`, {
       status: "ended",
       endedAt: new Date().toISOString(),
-      avgAttention: attentionHistory.length > 0
-        ? Math.round(attentionHistory.reduce((s, h) => s + h.avg, 0) / attentionHistory.length)
-        : null,
+      ...(attentionHistory.length > 0 
+        ? { avgAttention: Math.round(attentionHistory.reduce((s, h) => s + h.avg, 0) / attentionHistory.length) }
+        : {}),
     }),
     onSuccess: () => {
       const socket = getSocket();
@@ -107,6 +180,9 @@ export default function TeacherSession() {
       if (timerRef.current) clearInterval(timerRef.current);
       toast({ title: "Session ended", description: "Session data saved to analytics" });
     },
+    onError: (error) => {
+      toast({ title: "Failed to end session", description: String(error), variant: "destructive" });
+    }
   });
 
   useEffect(() => {
@@ -174,6 +250,14 @@ export default function TeacherSession() {
         const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
         return [...prev.slice(-29), { t: tickRef.current, avg }];
       });
+    });
+
+    socket.on("peer:student-ready", ({ studentId, peerId }) => {
+      setStudentStates(prev => prev.map(s => s.id === studentId ? { ...s, peerId } : s));
+      if (streamRef.current && peerRef.current) {
+        const call = peerRef.current.call(peerId, streamRef.current);
+        callsRef.current.set(peerId, call);
+      }
     });
 
     socket.on("disconnect", () => setSocketConnected(false));
@@ -283,15 +367,42 @@ export default function TeacherSession() {
               </div>
             </div>
 
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center shadow-2xl shadow-blue-500/20">
-                <span className="text-4xl font-bold text-white">{user ? getInitials(user.name) : "T"}</span>
+            {stream ? (
+              <div className="flex flex-col items-center gap-4 w-full h-[60vh] z-10 px-6">
+                <video 
+                  ref={(v) => { if (v && !v.srcObject) v.srcObject = stream; }}
+                  autoPlay muted playsInline 
+                  className="w-full h-full object-contain rounded-2xl bg-black shadow-2xl" 
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={toggleMute} variant={isMuted ? "destructive" : "secondary"}>
+                    {isMuted ? <MicOff className="w-4 h-4 mr-1.5" /> : <Mic className="w-4 h-4 mr-1.5" />}
+                    {isMuted ? "Unmute" : "Mute"}
+                  </Button>
+                  <Button size="sm" onClick={stopStream} variant="destructive">
+                    <Square className="w-4 h-4 mr-1.5" /> Stop Broadcasting
+                  </Button>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-white font-semibold text-lg">{user?.name || "Teacher"}</p>
-                <p className="text-white/50 text-sm">{classData?.title} — {classData?.subject}</p>
+            ) : (
+              <div className="flex flex-col items-center gap-4 z-10">
+                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary to-blue-400 flex items-center justify-center shadow-2xl shadow-blue-500/20">
+                  <span className="text-4xl font-bold text-white">{user ? getInitials(user.name) : "T"}</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-white font-semibold text-lg">{user?.name || "Teacher"}</p>
+                  <p className="text-white/50 text-sm">{classData?.title} — {classData?.subject}</p>
+                  <div className="flex gap-2 justify-center mt-5">
+                    <Button size="sm" onClick={() => startStream('camera')} className="bg-[#2563EB] text-white hover:bg-blue-600">
+                      <Camera className="w-4 h-4 mr-2" /> Share Camera
+                    </Button>
+                    <Button size="sm" onClick={() => startStream('screen')} variant="secondary" className="bg-white hover:bg-slate-100 text-black">
+                      <ScreenShare className="w-4 h-4 mr-2" /> Share Screen
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12">
               <div className="grid grid-cols-4 gap-3 max-w-lg mx-auto">

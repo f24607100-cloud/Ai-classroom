@@ -30,10 +30,11 @@ function getUniqueStudentsInSession(sessionId: string): { id: string; name: stri
 }
 
 function isStudentAlreadyConnected(sessionId: string, userId: string): boolean {
-  for (const [, s] of connectedStudents) {
-    if (s.sessionId === sessionId && s.userId === userId) return true;
-  }
-  return false;
+  let found = false;
+  connectedStudents.forEach((s) => {
+    if (s.sessionId === sessionId && s.userId === userId) found = true;
+  });
+  return found;
 }
 
 export function setupSocketIO(httpServer: Server, sessionMiddleware: any): SocketIOServer {
@@ -141,6 +142,18 @@ export function setupSocketIO(httpServer: Server, sessionMiddleware: any): Socke
       } catch (err) {
         log(`Failed to persist attention score: ${err}`, "socket.io");
       }
+    });
+
+    socket.on("student:peer-id", (peerId: string) => {
+      if (userRole !== "student") return;
+      const studentInfo = connectedStudents.get(socket.id);
+      if (!studentInfo) return;
+
+      io.to(`teacher:${studentInfo.sessionId}`).emit("peer:student-ready", {
+        studentId: userId,
+        peerId
+      });
+      log(`Student ${userName} sent peerId ${peerId} for session ${studentInfo.sessionId}`, "socket.io");
     });
 
     socket.on("teacher:end-session", async (sessionId: string) => {
