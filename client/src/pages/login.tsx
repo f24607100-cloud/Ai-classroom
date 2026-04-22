@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Eye, EyeOff, GraduationCap, Users, Shield, Zap, BarChart3, BookOpen } from "lucide-react";
+import { Brain, Eye, EyeOff, GraduationCap, Users, Shield, Zap, BarChart3, BookOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
