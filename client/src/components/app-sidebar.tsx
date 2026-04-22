@@ -7,7 +7,7 @@ import {
 import {
   LayoutDashboard, BookOpen, Users, Video, BarChart3,
   Bell, LogOut, Settings, GraduationCap, User, Shield,
-  Brain, Trophy, ClipboardCheck, FileText, Sparkles, ShieldAlert, MessageCircle,
+  Trophy, ClipboardCheck, FileText, Sparkles, ShieldAlert, MessageCircle,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -74,9 +74,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-4 py-3 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center flex-shrink-0">
-            <Brain className="w-4 h-4 text-white" />
-          </div>
+          <img
+            src="/favicon.png"
+            alt="EduSense Logo"
+            className="w-8 h-8 rounded-md flex-shrink-0 object-contain"
+          />
           <div className="group-data-[collapsible=icon]:hidden min-w-0">
             <p className="text-sm font-bold text-sidebar-foreground tracking-tight">EduSense AI</p>
             <p className="text-[11px] text-muted-foreground">Smart Learning Platform</p>

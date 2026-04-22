@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Brain, Eye, EyeOff, GraduationCap, Users, Shield, Zap, BarChart3, BookOpen } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, Users, Shield, Zap, BarChart3, BookOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 
@@ -71,9 +71,11 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/favicon.png"
+              alt="EduSense Logo"
+              className="w-10 h-10 rounded-xl object-contain bg-white/10 p-1"
+            />
             <div>
               <h1 className="text-white font-bold text-xl tracking-tight">EduSense AI</h1>
               <p className="text-blue-200 text-xs">Smart Classroom Platform</p>
@@ -110,9 +112,11 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         <div className="w-full max-w-[400px] space-y-6">
           <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-[#1E3A5F] flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/favicon.png"
+              alt="EduSense Logo"
+              className="w-9 h-9 rounded-xl object-contain"
+            />
             <div>
               <p className="font-bold text-foreground">EduSense AI</p>
               <p className="text-xs text-muted-foreground">Smart Classroom Platform</p>
