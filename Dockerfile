@@ -24,7 +24,9 @@ RUN npm install --omit=dev
 
 # Copy the built artifacts from stage 1
 COPY --from=build-frontend /app/dist ./dist
+COPY drizzle.config.ts ./
+COPY shared ./shared
 
 # Render will provide the PORT and DATABASE_URL via environment variables
-EXPOSE 5000
-CMD ["npm", "start"]
+# Start the app after ensuring database schema is pushed
+CMD npx drizzle-kit push && npm start
