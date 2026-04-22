@@ -1,4 +1,4 @@
-CREATE TABLE "assignment_submissions" (
+CREATE TABLE IF NOT EXISTS "assignment_submissions" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"assignment_id" varchar NOT NULL,
 	"student_id" varchar NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE "assignment_submissions" (
 	"submitted_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "assignments" (
+CREATE TABLE IF NOT EXISTS "assignments" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"book_id" varchar NOT NULL,
 	"class_id" varchar NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE "assignments" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "attendances" (
+CREATE TABLE IF NOT EXISTS "attendances" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"session_id" varchar NOT NULL,
 	"student_id" varchar NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE "attendances" (
 	"timestamp" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "attention_scores" (
+CREATE TABLE IF NOT EXISTS "attention_scores" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"session_id" varchar NOT NULL,
 	"student_id" varchar NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE "attention_scores" (
 	"timestamp" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "badges" (
+CREATE TABLE IF NOT EXISTS "badges" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar NOT NULL,
 	"badge_type" text NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE "badges" (
 	"earned_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "books" (
+CREATE TABLE IF NOT EXISTS "books" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"title" text NOT NULL,
 	"uploaded_by" varchar NOT NULL,
@@ -62,14 +62,14 @@ CREATE TABLE "books" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "class_enrollments" (
+CREATE TABLE IF NOT EXISTS "class_enrollments" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"class_id" varchar NOT NULL,
 	"student_id" varchar NOT NULL,
 	"joined_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "classes" (
+CREATE TABLE IF NOT EXISTS "classes" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"teacher_id" varchar NOT NULL,
 	"title" text NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE "classes" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "direct_messages" (
+CREATE TABLE IF NOT EXISTS "direct_messages" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"sender_id" varchar NOT NULL,
 	"receiver_id" varchar NOT NULL,
@@ -90,14 +90,14 @@ CREATE TABLE "direct_messages" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "institutions" (
+CREATE TABLE IF NOT EXISTS "institutions" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"admin_id" varchar,
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "notifications" (
+CREATE TABLE IF NOT EXISTS "notifications" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar NOT NULL,
 	"type" text NOT NULL,
@@ -107,7 +107,7 @@ CREATE TABLE "notifications" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "quiz_attempts" (
+CREATE TABLE IF NOT EXISTS "quiz_attempts" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"student_id" varchar NOT NULL,
 	"quiz_id" varchar NOT NULL,
@@ -117,7 +117,7 @@ CREATE TABLE "quiz_attempts" (
 	"completed_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "quizzes" (
+CREATE TABLE IF NOT EXISTS "quizzes" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"class_id" varchar NOT NULL,
 	"title" text NOT NULL,
@@ -129,7 +129,7 @@ CREATE TABLE "quizzes" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "reading_sessions" (
+CREATE TABLE IF NOT EXISTS "reading_sessions" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"student_id" varchar NOT NULL,
 	"assignment_id" varchar NOT NULL,
@@ -140,7 +140,7 @@ CREATE TABLE "reading_sessions" (
 	"started_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "lectures" (
+CREATE TABLE IF NOT EXISTS "lectures" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"class_id" varchar NOT NULL,
 	"teacher_id" varchar NOT NULL,
@@ -156,7 +156,7 @@ CREATE TABLE "lectures" (
 	"created_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
-CREATE TABLE "users" (
+CREATE TABLE IF NOT EXISTS "users" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"username" text NOT NULL,
 	"password" text NOT NULL,
