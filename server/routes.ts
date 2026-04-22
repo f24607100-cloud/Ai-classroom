@@ -94,7 +94,7 @@ function requireRole(...roles: string[]) {
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   const sessionMiddleware = session({
-    store: new PgSession({ pool, createTableIfMissing: true }),
+    store: new PgSession({ pool, createTableIfMissing: false }),
     secret: process.env.SESSION_SECRET || "edusense-secret-key",
     resave: false,
     saveUninitialized: false,

@@ -177,6 +177,12 @@ export const directMessages = pgTable("direct_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const sessionTable = pgTable("session", {
+  sid: varchar("sid").primaryKey().notNull(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
