@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
+import { runMigrations } from "./storage";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
@@ -77,6 +78,9 @@ app.use((req, res, next) => {
 
 
 (async () => {
+  // Run database migrations on startup
+  await runMigrations();
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
