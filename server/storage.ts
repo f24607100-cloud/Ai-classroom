@@ -15,6 +15,10 @@ import {
   type DirectMessage,
 } from "@shared/schema";
 
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is missing. Please set it in your environment.");
+}
+
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool);
 

@@ -9,6 +9,16 @@ import { createServer } from "http";
 const app = express();
 const httpServer = createServer(app);
 
+// Global Error Handlers for Production Debugging
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception thrown:", err);
+  process.exit(1);
+});
+
 // Security Layer
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled for development simplicity, usually handled at gateway
@@ -78,10 +88,21 @@ app.use((req, res, next) => {
 
 
 (async () => {
-  // Run database migrations on startup
-  await runMigrations();
+  try {
+    log("Starting server startup sequence...");
+    
+    // Run database migrations on startup
+    log("Initiating database migrations...");
+    await runMigrations();
+    log("Database migrations completed.");
 
-  await registerRoutes(httpServer, app);
+    log("Registering routes...");
+    await registerRoutes(httpServer, app);
+    log("Routes registered successfully.");
+  } catch (error) {
+    console.error("CRITICAL ERROR DURING STARTUP:", error);
+    process.exit(1);
+  }
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
