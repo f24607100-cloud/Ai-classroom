@@ -1,4 +1,5 @@
 # Stage 1: Build the frontend (including Rust-WASM)
+# Cache-bust: 2026-04-22
 FROM node:20-bookworm AS build-frontend
 WORKDIR /app
 
