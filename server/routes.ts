@@ -1,5 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+
+function log(message: string) {
+  const time = new Date().toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  console.log(`[${time}] [auth] ${message}`);
+}
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { Pool } from "pg";
@@ -88,8 +98,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     secret: process.env.SESSION_SECRET || "edusense-secret-key",
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 },
+    name: "edusense.sid",
+    cookie: { 
+      httpOnly: true, 
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax"
+    },
   });
+  log("Initializing session middleware...");
   app.use(sessionMiddleware);
 
   const { setupSocketIO } = await import("./socket");
@@ -101,14 +118,25 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = loginSchema.parse(req.body);
+      log(`Login attempt for username: ${username}`);
+      
       const user = await storage.getUserByUsername(username);
-      if (!user || user.password !== password) {
+      if (!user) {
+        log(`Login failed: User ${username} not found`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
+
+      if (user.password !== password) {
+        log(`Login failed: Incorrect password for user ${username}`);
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
       (req.session as any).userId = user.id;
       const { password: _, ...safeUser } = user;
+      log(`Login successful for user: ${username} (ID: ${user.id})`);
       res.json(safeUser);
     } catch (err) {
+      log(`Login error: ${err}`);
       res.status(400).json({ message: "Invalid request" });
     }
   });

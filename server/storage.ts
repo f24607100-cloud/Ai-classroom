@@ -837,8 +837,14 @@ export const storage = new DatabaseStorage();
 
 export async function seedDatabase() {
   try {
+    console.log("Checking if database needs seeding...");
     const existing = await storage.getUserByUsername("teacher1");
-    if (existing) return;
+    if (existing) {
+      console.log("Database already seeded (teacher1 found). Skipping.");
+      return;
+    }
+
+    console.log("Seeding database with initial users and classes...");
 
     const teacher = await storage.createUser({
       username: "teacher1",
