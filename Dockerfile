@@ -2,7 +2,7 @@
 FROM node:20-bookworm AS build-frontend
 WORKDIR /app
 
-# Install Rust for WASM compilation
+# Install Rust and wasm-pack for WASM compilation
 RUN apt-get update && apt-get install -y curl build-essential
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
@@ -16,12 +16,15 @@ RUN npm run build
 # Stage 2: Run the server
 FROM node:20-bookworm-slim
 WORKDIR /app
-COPY package*.json ./
-RUN npm install --omit=dev
-COPY --from=build-frontend /app/dist ./dist
-COPY --from=build-frontend /app/server ./server
-COPY --from=build-frontend /app/shared ./shared
-COPY .env .env
+ENV NODE_ENV=production
 
-EXPOSE 5001
+COPY package*.json ./
+# Install only production dependencies
+RUN npm install --omit=dev
+
+# Copy the built artifacts from stage 1
+COPY --from=build-frontend /app/dist ./dist
+
+# Render will provide the PORT and DATABASE_URL via environment variables
+EXPOSE 5000
 CMD ["npm", "start"]
