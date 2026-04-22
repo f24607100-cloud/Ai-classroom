@@ -1,8 +1,8 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import path from "path";
-import { fileURLToPath } from "url";
 import { Pool } from "pg";
+
 import { eq, and, desc, sql } from "drizzle-orm";
 import {
   users, institutions, classes, classEnrollments, sessions as sessionsTable,
@@ -18,17 +18,12 @@ import {
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 export async function runMigrations() {
   console.log("Running database migrations...");
   try {
-    // In production, migrations are in the root dist or app folder
-    const migrationsPath = process.env.NODE_ENV === "production" 
-      ? path.join(process.cwd(), "migrations")
-      : path.join(__dirname, "../migrations");
-      
+    // In both dev and prod, we run from the project root
+    const migrationsPath = path.join(process.cwd(), "migrations");
+    
     await migrate(db, { migrationsFolder: migrationsPath });
     console.log("Migrations completed successfully.");
   } catch (error) {
