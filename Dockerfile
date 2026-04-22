@@ -31,8 +31,10 @@ COPY shared ./shared
 
 # Render will provide the PORT and DATABASE_URL via environment variables
 # Start the app (migrations are now handled programmatically in server/index.ts)
+# Start the app directly with node to avoid npm overhead and permission issues
 EXPOSE 5000
-CMD ["npm", "start"]
+CMD ["node", "dist/index.cjs"]
+
 
 
 
