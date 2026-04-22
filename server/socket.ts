@@ -14,19 +14,20 @@ interface StudentSocket {
   userId: string;
   userName: string;
   sessionId: string;
+  peerId?: string;
 }
 
 const connectedStudents = new Map<string, StudentSocket>();
 const activeSessionIntervals = new Map<string, NodeJS.Timeout>();
 const sessionMetrics = new Map<string, { lastScores: number[], emotions: string[] }>();
 
-function getUniqueStudentsInSession(sessionId: string): { id: string; name: string }[] {
+function getUniqueStudentsInSession(sessionId: string): { id: string; name: string; peerId?: string }[] {
   const seen = new Set<string>();
-  const result: { id: string; name: string }[] = [];
+  const result: { id: string; name: string; peerId?: string }[] = [];
   connectedStudents.forEach((s) => {
     if (s.sessionId === sessionId && !seen.has(s.userId)) {
       seen.add(s.userId);
-      result.push({ id: s.userId, name: s.userName });
+      result.push({ id: s.userId, name: s.userName, peerId: s.peerId });
     }
   });
   return result;
@@ -196,11 +197,18 @@ export function setupSocketIO(httpServer: Server, sessionMiddleware: any): Socke
       const studentInfo = connectedStudents.get(socket.id);
       if (!studentInfo) return;
 
+      studentInfo.peerId = peerId;
       io.to(`teacher:${studentInfo.sessionId}`).emit("peer:student-ready", {
         studentId: userId,
         peerId
       });
-      log(`Student ${userName} sent peerId ${peerId} for session ${studentInfo.sessionId}`, "socket.io");
+      log(`Student ${userName} registered peerId ${peerId} for session ${studentInfo.sessionId}`, "socket.io");
+    });
+
+    socket.on("teacher:request-peer-ids", (sessionId: string) => {
+      if (userRole !== "teacher") return;
+      log(`Teacher ${userName} requested all peer IDs for session ${sessionId}`, "socket.io");
+      io.to(`session:${sessionId}`).emit("peer:request-id");
     });
 
     socket.on("teacher:end-session", async (sessionId: string) => {

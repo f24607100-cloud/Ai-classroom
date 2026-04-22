@@ -38,11 +38,20 @@ export default function StudentSession() {
   const { data: session, isLoading } = useQuery<any>({ queryKey: ["/api/sessions", id] });
 
   useEffect(() => {
-    peerRef.current = new Peer();
+    peerRef.current = new Peer(undefined, {
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+        ]
+      }
+    });
     
     peerRef.current.on('call', (call) => {
+      console.log("Receiving call from teacher...");
       call.answer();
       call.on('stream', (stream) => {
+        console.log("Received stream from teacher", stream.getTracks());
         setRemoteStream(stream);
       });
     });
@@ -81,6 +90,12 @@ export default function StudentSession() {
       setJoined(false);
       setCameraActive(false);
       toast({ title: "Session Ended", description: "The teacher has ended this session" });
+    });
+
+    socket.on("peer:request-id", () => {
+      if (peerRef.current?.id) {
+        socket.emit("student:peer-id", peerRef.current.id);
+      }
     });
 
     socket.on("disconnect", () => {

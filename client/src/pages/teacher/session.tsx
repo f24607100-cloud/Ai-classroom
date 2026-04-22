@@ -119,29 +119,49 @@ export default function TeacherSession() {
     try {
       stopStream();
 
-      const mediaStream = type === "camera"
-        ? await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        : await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: "monitor" }, audio: true });
-
-      setIsMuted(false);
-
-      setStream(mediaStream);
-      streamRef.current = mediaStream;
-
-      const callStudents = () => {
+      const callStudents = (streamToUse: MediaStream) => {
         studentStatesRef.current.forEach(student => {
-          if (student.peerId && student.connected) {
-            const call = peerRef.current!.call(student.peerId, mediaStream);
+          if (student.peerId && student.connected && !callsRef.current.has(student.peerId)) {
+            const call = peerRef.current!.call(student.peerId, streamToUse);
             callsRef.current.set(student.peerId, call);
           }
         });
       };
 
+      const finalStream = type === "camera"
+        ? await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        : await (async () => {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+              video: { displaySurface: "monitor" }, 
+              audio: true 
+            });
+            try {
+              // Also capture microphone to merge with screen share
+              const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+              const tracks = [...screenStream.getVideoTracks(), ...micStream.getAudioTracks()];
+              return new MediaStream(tracks);
+            } catch (micErr) {
+              console.warn("Could not capture microphone for screen share", micErr);
+              return screenStream;
+            }
+          })();
+
+      setIsMuted(false);
+      setStream(finalStream);
+      streamRef.current = finalStream;
+
       if (!peerRef.current) {
-        peerRef.current = new Peer();
-        peerRef.current.on('open', callStudents);
+        peerRef.current = new Peer(undefined, {
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+            ]
+          }
+        });
+        peerRef.current.on('open', () => callStudents(finalStream));
       } else {
-        callStudents();
+        callStudents(finalStream);
       }
 
 
@@ -237,10 +257,19 @@ export default function TeacherSession() {
       socket.emit("teacher:join-session", id);
     });
 
-    socket.on("session:current-students", (students: { id: string; name: string }[]) => {
-      setStudentStates(prev => prev.map(s => ({
-        ...s, connected: students.some(cs => cs.id === s.id),
-      })));
+    socket.on("session:current-students", (students: { id: string; name: string; peerId?: string }[]) => {
+      setStudentStates(prev => prev.map(s => {
+        const found = students.find(cs => cs.id === s.id);
+        return {
+          ...s,
+          connected: !!found,
+          peerId: found?.peerId || s.peerId
+        };
+      }));
+      // If any connected student is missing a peerId, request all students to send their IDs
+      if (students.some(s => !s.peerId)) {
+        socket.emit("teacher:request-peer-ids", id);
+      }
     });
 
     socket.on("student:joined", (data: { id: string; name: string }) => {
